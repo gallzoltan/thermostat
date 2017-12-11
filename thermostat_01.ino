@@ -70,9 +70,9 @@ void setup () {
   pinMode(PIN_RELAY,OUTPUT);
   
   attachInterrupt(PIN_CLK, getTurned, FALLING); // encoder turned
-  attachInterrupt(PIN_SW, getPressed, RISING); // encoder pressed button
-  tSendData.attach(60, sendingData); // adatok küldése szervernek 60mp
-  tCurrTemp.attach(10, getCurrentTemp); // aktuális hőmérséklet 10 mp
+  attachInterrupt(PIN_SW, getPressed, RISING);  // encoder pressed button
+  tSendData.attach(60, sendingData);            // adatok küldése szervernek 60mp
+  tCurrTemp.attach(10, getCurrentTemp);         // aktuális hőmérséklet 10 mp
   
   Serial.begin(115200);
   delay(10);
@@ -145,11 +145,13 @@ void loop() {
       flagScreen = true;
       String payload = "";
       String url = server;
-      url += "?hello=OK";
-      url += "&temp=";
-      url += String(currentTempString);
-      url += "&setterm=";
-      url += String(setTemp);
+        url += "?hello=OK";
+        url += "&temp=";
+        url += String(currentTempString);
+        url += "&setterm=";
+        url += String(setTemp);
+        url += "&relay=";
+        url += String(digitalRead(PIN_RELAY));
       
       if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
