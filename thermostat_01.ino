@@ -7,6 +7,18 @@
 #include <Ticker.h>
 
 #define ONE_WIRE_BUS 0
+#define PIN_CLK 14
+#define PIN_DT 12
+#define PIN_SW 13
+#define PIN_RELAY 15
+#define PIN_SCL 4
+#define PIN_SDA 5
+
+const char* ssid = "gallz";
+const char* password = "ABizalomCsodakatTesz";
+const float maxTemp = 64;
+const float delta = 0.2;
+const String server = "http://192.168.1.101/thermostat.php";
 
 Ticker tCurrTemp;
 Ticker tSendData;
@@ -22,19 +34,8 @@ float currentTemp = 20;
 float setTempAuto = 20;
 float setTemp = 20;
 char currentTempString[6];
-String server = "http://192.168.1.101/thermostat.php";
 
-const char* ssid = "gallz";
-const char* password = "ABizalomCsodakatTesz";
-const float maxTemp = 64;
-const float delta = 0.2;
-
-const int PinCLK=14;                   // Used for generating interrupts using CLK signal
-const int PinDT=12;                    // Used for reading DT signal
-const int PinSW=13; 
-const int PinRelay=15;
-
-SSD1306  display(0x3c, 5, 4);
+SSD1306  display(0x3c, PIN_SDA, PIN_SCL);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
 
@@ -45,7 +46,7 @@ void getTurned ()  {
   flagTurn = true;
   
   if (interruptTime - lastInterruptTime > 10) {
-    if(digitalRead(PinCLK) == digitalRead(PinDT)){
+    if(digitalRead(PIN_CLK) == digitalRead(PIN_DT)){
       virtualPosition++ ;
     }
     else {
@@ -63,13 +64,13 @@ void getPressed() {
 
 void setup () {
  
-  pinMode(PinCLK,INPUT);
-  pinMode(PinDT,INPUT);  
-  pinMode(PinSW,INPUT_PULLUP);
-  pinMode(PinRelay,OUTPUT);
+  pinMode(PIN_CLK,INPUT);
+  pinMode(PIN_DT,INPUT);  
+  pinMode(PIN_SW,INPUT_PULLUP);
+  pinMode(PIN_RELAY,OUTPUT);
   
-  attachInterrupt(PinCLK, getTurned, FALLING); // encoder turned
-  attachInterrupt(PinSW, getPressed, RISING); // encoder pressed button
+  attachInterrupt(PIN_CLK, getTurned, FALLING); // encoder turned
+  attachInterrupt(PIN_SW, getPressed, RISING); // encoder pressed button
   tSendData.attach(60, sendingData); // adatok küldése szervernek 60mp
   tCurrTemp.attach(10, getCurrentTemp); // aktuális hőmérséklet 10 mp
   
@@ -185,11 +186,11 @@ void loop() {
   }
 
   if(currentTemp < (setTemp+delta)){
-    digitalWrite(PinRelay, HIGH);
+    digitalWrite(PIN_RELAY, HIGH);
   }
-  else digitalWrite(PinRelay, LOW);
+  else digitalWrite(PIN_RELAY, LOW);
   /*if(currentTemp > setTemp){
-    digitalWrite(PinRelay, LOW);
+    digitalWrite(PIN_RELAY, LOW);
   }*/
   
   if(flagScreen) drawTest();
