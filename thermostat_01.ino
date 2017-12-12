@@ -1,7 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
-#include "SSD1306.h"
+#include <SSD1306.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Ticker.h>
@@ -85,6 +85,7 @@ void setup () {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
