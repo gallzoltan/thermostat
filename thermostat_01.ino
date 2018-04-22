@@ -18,12 +18,16 @@ const char* ssid = "gallz";
 const char* password = "ABizalomCsodakatTesz";
 const float maxTemp = 64;
 const float delta = 0.2;
-const String server = "http://192.168.1.101/thermostat.php";
+//const String server = "http://192.168.1.101/thermostat.php";
+const String server = "http://thermo";
 
 Ticker tCurrTemp;
 Ticker tSendData;
+Ticker tGetData;
+
 volatile int virtualPosition=40;
 volatile boolean flagSend = false;
+volatile boolean flagGet = false;
 volatile boolean flagTurn = false;
 volatile boolean flagPressed = false;
 volatile boolean flagCurrentTemp = false;
@@ -71,7 +75,8 @@ void setup () {
   
   attachInterrupt(PIN_CLK, getTurned, FALLING); // encoder turned
   attachInterrupt(PIN_SW, getPressed, RISING);  // encoder pressed button
-  tSendData.attach(60, sendingData);            // adatok küldése szervernek 60mp
+  tSendData.attach(30, sendingData);           // adatok küldése a szervernek 10 perc
+  tGetData.attach(60, gettingData);             // adatok kérése a szervertől 1perc
   tCurrTemp.attach(10, getCurrentTemp);         // aktuális hőmérséklet 10 mp
   
   Serial.begin(115200);
@@ -140,26 +145,43 @@ void loop() {
     dtostrf(currentTemp, 2, 2, currentTempString);
   }
 
+  //lekérdezni a szervert?
+  if (flagGet) {
+    flagGet = false;
+  }
+  
   // küldeni kell a szervernek?
   if (flagSend) {
       flagSend = false;
       flagScreen = true;
-      String payload = "";
-      String url = server;
-        url += "?hello=OK";
+      
+      String payload = "{";
+         payload += "\"currTemp\":\"23.3\",";
+         payload += "\"adjustTemp\":\"21.1\",";
+         payload += "\"circoState\":\"0\",";
+         payload += "\"controlMode\":\"1\"";
+         payload += "}";
+      
+      //String url = server;
+      /*url += "?hello=OK";
         url += "&temp=";
         url += String(currentTempString);
         url += "&setterm=";
         url += String(setTemp);
         url += "&relay=";
-        url += String(digitalRead(PIN_RELAY));
+        url += String(digitalRead(PIN_RELAY));*/
       
       if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
-        http.begin(url);
-        int httpCode = http.GET();
-     
-        if (httpCode > 0) {
+        //WiFiClient http;
+        http.addHeader("Content-Type", "application/json");             
+        http.begin(server + "/insert");
+        
+        //int httpCode = http.GET();
+        int httpCode = http.sendRequest("PUT", payload);
+        Serial.println(httpCode);
+                  
+        /*if (httpCode > 0) {
           payload = http.getString(); 
         }
      
@@ -175,10 +197,10 @@ void loop() {
         String settime = root["settime"];
         Serial.println(getdata);
         Serial.println(setterm);
-        Serial.println(settime);*/
+        Serial.println(settime);*/       
       }
       
-      Serial.println(url);  
+        
       Serial.println(payload);    
   }
   
@@ -235,6 +257,10 @@ void drawTest() {
 
 void sendingData() {
   flagSend = true;
+}
+
+void gettingData() {
+  flagGet = true;
 }
 
 void getCurrentTemp() {
