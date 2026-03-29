@@ -8,7 +8,7 @@ Arduino termosztát **ESP8266** mikrokontrolleren. DS18B20 szenzorból olvassa a
 
 ## Build & Feltöltés
 
-Ez egy Arduino IDE projekt (`.ino` fájl), nincs CLI build rendszer. Fordításhoz és feltöltéshez:
+Ez egy Arduino IDE projekt, nincs CLI build rendszer. Fordításhoz és feltöltéshez:
 - Nyisd meg a `thermostat_01.ino` fájlt Arduino IDE-ben (vagy arduino-cli-vel)
 - Board: **ESP8266** (pl. NodeMCU vagy Wemos D1)
 - Szükséges könyvtárak: `ESP8266WiFi`, `ESP8266HTTPClient`, `ArduinoJson`, `SSD1306` (ESP8266 OLED driver), `OneWire`, `DallasTemperature`, `Ticker`, `WiFiManager` (tzapu)
@@ -18,6 +18,16 @@ Ez egy Arduino IDE projekt (`.ino` fájl), nincs CLI build rendszer. Fordításh
 arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 thermostat_01.ino
 arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 -p /dev/ttyUSB0 thermostat_01.ino
 ```
+
+## Fájlstruktúra
+
+| Fájl | Tartalom |
+|------|----------|
+| `thermostat_01.ino` | `setup()`, `loop()`, ISR-ek, Ticker callback-ek, globális állapot |
+| `config.h` | Pin definíciók (`#define`), konstansok (`MAX_TEMP`, `DELTA`, `SERVER_URL`) |
+| `sensor.h/.cpp` | DS18B20 szenzor: `initSensor()`, `getTemperature(float lastTemp)` |
+| `display.h/.cpp` | SSD1306 kijelző: `initDisplay()`, `drawMessage()`, `drawScreen()` |
+| `network.h/.cpp` | WiFi + HTTP: `initWifi()`, `sendData()`, `getData()` |
 
 ## Hardware pin kiosztás
 
@@ -33,15 +43,16 @@ arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 -p /dev/ttyUSB0 thermostat_
 
 ## Architektúra
 
-Egyetlen `.ino` fájl. Kulcsminta: **megszakítás + flag-alapú főhurok**.
+Kulcsminta: **megszakítás + flag-alapú főhurok**.
 
 - **Ticker timerek** ISR-biztos callbackeket hívnak, amelyek csak `volatile boolean` flageket állítanak be (`flagSend`, `flagGet`, `flagCurrentTemp`)
-- **`loop()`** ellenőrzi a flageket, és elvégzi a tényleges munkát (WiFi HTTP hívások, szenzor olvasás, kijelző frissítés) — elkerülve az I/O műveletek ISR-ben való végrehajtását
+- **`loop()`** ellenőrzi a flageket, és hívja a modulok függvényeit (hálózat, szenzor, kijelző) — I/O nem fut ISR-ben
 - **Rotary encoder** növeli/csökkenti a `virtualPosition` értéket (→ `setTemp = virtualPosition * 0.5`), és `flagManual` módba kapcsol
 - **Auto mód**: a szervertől kapott `setTempAuto` lesz a `setTemp`; manuális módban az encoder értéke
-- **Relé logika**: hisztézissel — BE ha `currentTemp < setTemp - delta`, KI ha `currentTemp > setTemp + delta`; az állapotot `relayState` tárolja
+- **Relé logika**: hisztézissel — BE ha `currentTemp < setTemp - DELTA`, KI ha `currentTemp > setTemp + DELTA`; az állapotot `relayState` tárolja
 - **WiFi**: `WiFiManager` kezeli — első indításkor `Termostat` AP-ot hoz létre, ahol böngészőből konfigurálható; a mentett adatokat flashben tárolja
+- Modul-szintű objektumok (`DS18B20`, `SSD1306 display`) `static`-ként a `.cpp` fájlokban vannak — nem kerülnek ki a globális névtérbe
 
 ## Szerver API
 
-A backend a `http://thermo` címen érhető el (helyi hálózat). Az adatokat HTTP PUT kéréssel küldi a `/insert` végpontra, GET kéréssel kéri le a `/get` végpontról. Mindkét irány JSON alapú (`currTemp`, `adjustTemp`, `circoState`, `controlMode` / `setterm`).
+A backend a `http://thermo` címen érhető el (`SERVER_URL` a `config.h`-ban). Az adatokat HTTP PUT kéréssel küldi a `/insert` végpontra, GET kéréssel kéri le a `/get` végpontról. Mindkét irány JSON alapú (`currTemp`, `adjustTemp`, `circoState`, `controlMode` / `setterm`).

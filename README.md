@@ -62,6 +62,16 @@ PUT payload példa:
 - Ticker
 - WiFiManager (tzapu)
 
+## Fájlstruktúra
+
+| Fájl | Tartalom |
+|------|----------|
+| `thermostat_01.ino` | Főprogram: `setup()`, `loop()`, ISR-ek, globális állapot |
+| `config.h` | Pin definíciók és konstansok |
+| `sensor.h/.cpp` | DS18B20 hőmérséklet szenzor kezelés |
+| `display.h/.cpp` | SSD1306 OLED kijelző logika |
+| `network.h/.cpp` | WiFi kapcsolat és HTTP kommunikáció |
+
 ## Build és feltöltés
 
 **Arduino IDE:** Nyisd meg a `thermostat_01.ino` fájlt, válaszd ki az ESP8266 boardot, majd fordítsd és töltsd fel.
@@ -83,7 +93,7 @@ Az eszköz **WiFiManager**-t használ – a WiFi jelszó nincs hardkódolva a fo
 4. Válaszd ki a hálózatot és add meg a jelszót
 5. Az eszköz elmenti az adatokat és csatlakozik – következő indításkor automatikusan kapcsolódik
 
-**Szerver cím** a `thermostat_01.ino` fájlban állítható:
+**Szerver cím** a `config.h` fájlban állítható:
 ```cpp
-const String server = "http://thermo";
+#define SERVER_URL "http://thermo"
 ```
