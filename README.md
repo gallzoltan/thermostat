@@ -60,6 +60,7 @@ PUT payload példa:
 - OneWire
 - DallasTemperature
 - Ticker
+- WiFiManager (tzapu)
 
 ## Build és feltöltés
 
@@ -71,11 +72,18 @@ arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 thermostat_01.ino
 arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 -p /dev/ttyUSB0 thermostat_01.ino
 ```
 
-## Konfiguráció
+## WiFi konfiguráció
 
-A WiFi hitelesítő adatok a `thermostat_01.ino` fájl elején állíthatók:
+Az eszköz **WiFiManager**-t használ – a WiFi jelszó nincs hardkódolva a forrásban.
+
+**Első indítás / új hálózat beállítása:**
+1. Az eszköz `Termostat` nevű WiFi hozzáférési pontot hoz létre
+2. Csatlakozz ehhez a hálózathoz
+3. Böngészőben nyisd meg a `192.168.4.1` címet
+4. Válaszd ki a hálózatot és add meg a jelszót
+5. Az eszköz elmenti az adatokat és csatlakozik – következő indításkor automatikusan kapcsolódik
+
+**Szerver cím** a `thermostat_01.ino` fájlban állítható:
 ```cpp
-const char* ssid = "network_name";
-const char* password = "network_password";
 const String server = "http://thermo";
 ```

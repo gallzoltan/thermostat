@@ -11,7 +11,7 @@ Arduino termosztát **ESP8266** mikrokontrolleren. DS18B20 szenzorból olvassa a
 Ez egy Arduino IDE projekt (`.ino` fájl), nincs CLI build rendszer. Fordításhoz és feltöltéshez:
 - Nyisd meg a `thermostat_01.ino` fájlt Arduino IDE-ben (vagy arduino-cli-vel)
 - Board: **ESP8266** (pl. NodeMCU vagy Wemos D1)
-- Szükséges könyvtárak: `ESP8266WiFi`, `ESP8266HTTPClient`, `ArduinoJson`, `SSD1306` (ESP8266 OLED driver), `OneWire`, `DallasTemperature`, `Ticker`
+- Szükséges könyvtárak: `ESP8266WiFi`, `ESP8266HTTPClient`, `ArduinoJson`, `SSD1306` (ESP8266 OLED driver), `OneWire`, `DallasTemperature`, `Ticker`, `WiFiManager` (tzapu)
 
 `arduino-cli` használatával:
 ```bash
@@ -39,15 +39,9 @@ Egyetlen `.ino` fájl. Kulcsminta: **megszakítás + flag-alapú főhurok**.
 - **`loop()`** ellenőrzi a flageket, és elvégzi a tényleges munkát (WiFi HTTP hívások, szenzor olvasás, kijelző frissítés) — elkerülve az I/O műveletek ISR-ben való végrehajtását
 - **Rotary encoder** növeli/csökkenti a `virtualPosition` értéket (→ `setTemp = virtualPosition * 0.5`), és `flagManual` módba kapcsol
 - **Auto mód**: a szervertől kapott `setTempAuto` lesz a `setTemp`; manuális módban az encoder értéke
-- **Relé logika**: relé BE, ha `currentTemp < (setTemp + delta)`
+- **Relé logika**: hisztézissel — BE ha `currentTemp < setTemp - delta`, KI ha `currentTemp > setTemp + delta`; az állapotot `relayState` tárolja
+- **WiFi**: `WiFiManager` kezeli — első indításkor `Termostat` AP-ot hoz létre, ahol böngészőből konfigurálható; a mentett adatokat flashben tárolja
 
 ## Szerver API
 
-A backend a `http://thermo` címen érhető el (helyi hálózat). Az adatokat HTTP PUT kéréssel küldi a `/insert` végpontra JSON formátumban: `currTemp`, `adjustTemp`, `circoState`, `controlMode` mezőkkel. A GET oldal (`flagGet`) még nincs implementálva.
-
-## Ismert folyamatban lévő dolgok
-
-- WiFi hitelesítő adatok (`ssid`/`password`) hardkódolva vannak a forrásban
-- A `flagGet` kezelője üres — a szerverről való lekérdezés még nincs megvalósítva
-- A `flagSend` jelenleg hardkódolt tesztértékeket küld valódi szenzorleolvasás helyett
-- A kikommentezett kód egy korábbi GET-alapú API-ról való átállást mutat PUT/JSON-ra
+A backend a `http://thermo` címen érhető el (helyi hálózat). Az adatokat HTTP PUT kéréssel küldi a `/insert` végpontra, GET kéréssel kéri le a `/get` végpontról. Mindkét irány JSON alapú (`currTemp`, `adjustTemp`, `circoState`, `controlMode` / `setterm`).

@@ -5,6 +5,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Ticker.h>
+#include <WiFiManager.h>
 
 #define ONE_WIRE_BUS 0
 #define PIN_CLK 14
@@ -14,8 +15,6 @@
 #define PIN_SCL 4
 #define PIN_SDA 5
 
-const char* ssid = "gallz";
-const char* password = "ABizalomCsodakatTesz";
 const float maxTemp = 64;
 const float delta = 0.2;
 const String server = "http://thermo";
@@ -81,25 +80,24 @@ void setup() {
   display.init();
   display.flipScreenVertically();
 
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  // WiFi konfiguráció – ha nincs mentett hálózat, AP módban elindul "Termostat" névvel
+  // Csatlakozz hozzá és a megnyíló oldalon add meg a WiFi adatokat
+  display.clear();
+  display.setFont(ArialMT_Plain_10);
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.drawString(0, 0, "WiFi csatlakozas...");
+  display.display();
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  WiFiManager wifiManager;
+  wifiManager.setConfigPortalTimeout(180); // 3 perc után folytatja AP nélkül is
+  if (!wifiManager.autoConnect("Termostat")) {
+    Serial.println("WiFi kapcsolat sikertelen, ujraindulas...");
+    delay(3000);
+    ESP.restart();
   }
-  Serial.println();
+
   Serial.println("Connected to wifi");
-  Serial.print("Status: "); Serial.println(WiFi.status());
-  Serial.print("IP: ");     Serial.println(WiFi.localIP());
-  Serial.print("Subnet: "); Serial.println(WiFi.subnetMask());
-  Serial.print("Gateway: ");Serial.println(WiFi.gatewayIP());
-  Serial.print("SSID: ");   Serial.println(WiFi.SSID());
-  Serial.print("Signal: "); Serial.println(WiFi.RSSI());
+  Serial.print("IP: "); Serial.println(WiFi.localIP());
   delay(1000);
 
   display.clear();
